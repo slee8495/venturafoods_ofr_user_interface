@@ -1,0 +1,12 @@
+name: venturafoods_ofr_user_interface
+title: venturafoods_ofr_user_interface
+username: venturafoods
+account: venturafoods
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12099512
+bundleId: 8681478
+url: https://venturafoods.shinyapps.io/venturafoods_ofr_user_interface/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
