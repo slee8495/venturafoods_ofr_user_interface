@@ -10,8 +10,6 @@ library(lubridate)
 library(rio)
 
 
-specific_date <- as.Date("2024-05-29")
-
 ### Daily Processing ###
 #################################################################### Read Files ####################################################################
 ofr_original <- read_excel("data-xlsx/05302024.xlsx")
