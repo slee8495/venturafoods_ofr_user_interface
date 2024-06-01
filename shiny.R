@@ -64,6 +64,13 @@ ui <- navbarPage("OFR User Input Data Base App",
                             )
                           )
                  ),
+                 tabPanel("Data Base",
+                          fluidPage(
+                            titlePanel("Data Base"),
+                            div(style = 'overflow-x: scroll; overflow-y: scroll; height: calc(100vh - 100px);',
+                                DTOutput("database_data"))
+                          )
+                 ),
                  tags$head(
                    tags$style(HTML("
                                    #data3 table.dataTable tr td:nth-child(7),
@@ -71,7 +78,10 @@ ui <- navbarPage("OFR User Input Data Base App",
                                    #data3 table.dataTable tr td:nth-child(9),
                                    #dashboard_data table.dataTable tr td:nth-child(7),
                                    #dashboard_data table.dataTable tr td:nth-child(8),
-                                   #dashboard_data table.dataTable tr td:nth-child(9) {
+                                   #dashboard_data table.dataTable tr td:nth-child(9),
+                                   #database_data table.dataTable tr td:nth-child(7),
+                                   #database_data table.dataTable tr td:nth-child(8),
+                                   #database_data table.dataTable tr td:nth-child(9) {
                                      background-color: lightgreen !important;
                                    }
                                    "))
@@ -80,7 +90,7 @@ ui <- navbarPage("OFR User Input Data Base App",
 
 ###################### server ######################
 server <- function(input, output, session) {
-  rv <- reactiveValues(data1 = NULL, processed_data1 = NULL, processed_data2 = NULL, user_input_data = NULL)
+  rv <- reactiveValues(data1 = NULL, processed_data1 = NULL, processed_data2 = NULL, user_input_data = NULL, database_data = NULL)
   
   ofr_1st_data <- function(df) {
     df %>%
@@ -163,7 +173,12 @@ server <- function(input, output, session) {
   })
   
   output$dashboard_data <- renderDT({
-    datatable(filtered_dashboard_data(), editable = list(target = "cell", columns = c(6, 7, 8)), options = list(scrollX = TRUE, pageLength = 10))
+    datatable(filtered_dashboard_data(), options = list(scrollX = TRUE, pageLength = 10))
+  })
+  
+  # Render database data (dummy data for now)
+  output$database_data <- renderDT({
+    datatable(rv$database_data, options = list(scrollX = TRUE, pageLength = 10))
   })
   
   output$current_date <- renderText({
