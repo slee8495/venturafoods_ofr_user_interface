@@ -6,26 +6,52 @@ library(lubridate)
 library(shinyWidgets)
 library(readxl)
 library(janitor)
-library(openxlsx)
+
+source("data.R")
+
+# Paths to save data
+user_input_database_data_path <- "data/user_input_database_data.rds"
+user_input_backend_data_path <- "data/user_input_backend_data.rds"
+master_database_data_path <- "data/master_database_data.rds"
+
+# Initialize data if files don't exist
+if (!file.exists(user_input_database_data_path)) {
+  saveRDS(data.frame(), user_input_database_data_path)
+}
+if (!file.exists(user_input_backend_data_path)) {
+  saveRDS(data.frame(), user_input_backend_data_path)
+}
+if (!file.exists(master_database_data_path)) {
+  saveRDS(data.frame(), master_database_data_path)
+}
+
+# Load initial data from the saved files or from the initial processing
+load_data <- function() {
+  list(
+    processed_data1 = ofr_1st_data,
+    processed_data2 = ofr_2nd_data %>% mutate(reason_code = "", comment = "", submitted_date = Sys.Date()),
+    user_input_backend_data = readRDS(user_input_backend_data_path),
+    user_input_database_data = readRDS(user_input_database_data_path),
+    master_database_data = readRDS(master_database_data_path)
+  )
+}
+
+data <- load_data()
 
 #### Shiny ####
 ##################### ui ######################
-ui <- navbarPage("OFR User Input Data Base App", 
+ui <- navbarPage("OFR User Input Data Base App",
                  theme = shinythemes::shinytheme("flatly"),
-                 tabPanel("Main Page", 
+                 tabPanel("Main Page",
                           fluidPage(
                             titlePanel(
-                              div(class = "row", 
+                              div(class = "row",
                                   div(class = "col-sm-8",
-                                      "Data Upload and Manipulation App"), 
+                                      "Data Upload and Manipulation App"),
                                   div(class = "col-sm-4",
                                       img(src = "VenturaFoodsLogo.png", height = "60px", align = "right"))
                               )
                             ),
-                            tags$head(tags$link(rel = "shortcut icon", href = "www/VenturaFoodsLogo.png")),
-                            
-                            fileInput("file1", "Choose Excel File", accept = c(".xlsx")),
-                            actionButton("upload_button", "Upload OFR Today's Data"),
                             div(style = "color: blue; margin-top: 10px;", "Only an authorized user can initially upload the data once per day.")
                           )
                  ),
@@ -35,7 +61,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                                      fluidPage(
                                        titlePanel(
                                          div(class = "row",
-                                             div(class = "col-sm-8", 
+                                             div(class = "col-sm-8",
                                                  span("Today's Data"),
                                                  span(textOutput("current_date"), style = "margin-left: 20px; font-size: 20px;")
                                              )
@@ -48,7 +74,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                             tabPanel("User-Input",
                                      fluidPage(
                                        titlePanel("User-Input"),
-                                       actionButton("deploy_button", "Deploy"),
+                                       actionButton("save_button", "Save"),
                                        pickerInput("campus_filter", "Filter by Campus No:", choices = NULL, selected = NULL, multiple = TRUE, options = list(`actions-box` = TRUE)),
                                        dateRangeInput("date_filter", "Filter by Shortage Date:", start = NULL, end = NULL),
                                        div(style = 'overflow-x: scroll; overflow-y: scroll; height: calc(100vh - 100px);',
@@ -58,6 +84,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                             tabPanel("User-Input Dashboard",
                                      fluidPage(
                                        titlePanel("User-Input Dashboard"),
+                                       actionButton("send_to_database_button", "Send to Database"),
                                        pickerInput("dashboard_campus_filter", "Filter by Campus No:", choices = NULL, selected = NULL, multiple = TRUE, options = list(`actions-box` = TRUE)),
                                        dateRangeInput("dashboard_date_filter", "Filter by Shortage Date:", start = NULL, end = NULL),
                                        div(style = 'overflow-x: scroll; overflow-y: scroll; height: calc(100vh - 100px);',
@@ -69,7 +96,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                  tabPanel("Data Base",
                           fluidPage(
                             titlePanel("Data Base"),
-                            h4(span("**It refreshes daily at 23:59 PM**", style = "color: blue;")),
+                            h4(span("**It refreshes daily at 23:59 PM (PT)**", style = "color: blue;")),
                             tabsetPanel(
                               tabPanel("User-Input Data Base",
                                        fluidPage(
@@ -98,16 +125,16 @@ ui <- navbarPage("OFR User Input Data Base App",
                    tags$style(HTML("
                                    #data3 table.dataTable tr td:nth-child(7),
                                    #data3 table.dataTable tr td:nth-child(8),
-                                   #data3 table.dataTable tr td:nth-child(9),
-                                   #dashboard_data table.dataTable tr td:nth-child(7),
-                                   #dashboard_data table.dataTable tr td:nth-child(8),
-                                   #dashboard_data table.dataTable tr td:nth-child(9),
-                                   #user_input_database_data table.dataTable tr td:nth-child(7),
-                                   #user_input_database_data table.dataTable tr td:nth-child(8),
-                                   #user_input_database_data table.dataTable tr td:nth-child(9),
-                                   #master_database_data table.dataTable tr td:nth-child(7),
-                                   #master_database_data table.dataTable tr td:nth-child(8),
-                                   #master_database_data table.dataTable tr td:nth-child(9) {
+                                   #data3 table.dataTable tr td:nth.child(9),
+                                   #dashboard_data table.dataTable tr td:nth.child(7),
+                                   #dashboard_data table.dataTable tr td:nth.child(8),
+                                   #dashboard_data table.dataTable tr td:nth.child(9),
+                                   #user_input_database_data table.dataTable tr td:nth.child(7),
+                                   #user_input_database_data table.dataTable tr td:nth.child(8),
+                                   #user_input_database_data table.dataTable tr td:nth.child(9),
+                                   #master_database_data table.dataTable tr td:nth.child(7),
+                                   #master_database_data table.dataTable tr td:nth.child(8),
+                                   #master_database_data table.dataTable tr td:nth.child(9) {
                                      background-color: lightgreen !important;
                                    }
                                    "))
@@ -116,51 +143,26 @@ ui <- navbarPage("OFR User Input Data Base App",
 
 ###################### server ######################
 server <- function(input, output, session) {
-  rv <- reactiveValues(data1 = NULL, processed_data1 = NULL, processed_data2 = NULL, user_input_data = NULL, user_input_database_data = data.frame(), master_database_data = data.frame(), last_upload_date = NULL)
+  # Load backend data on session start
+  rv <- reactiveValues(
+    processed_data1 = data$processed_data1,
+    processed_data2 = data$processed_data2,
+    user_input_data = NULL,
+    user_input_backend_data = readRDS(user_input_backend_data_path),
+    user_input_database_data = readRDS(user_input_database_data_path),
+    master_database_data = readRDS(master_database_data_path)
+  )
   
-  ofr_1st_data <- function(df) {
-    df %>%
-      janitor::clean_names() %>%
-      dplyr::mutate(item_no = gsub("-", "", item_no)) %>%
-      dplyr::mutate(shortage_date_2 = as.double(shortage_date)) %>%
-      dplyr::mutate(ref = paste0(campus_no, "_", shortage_date_2, "_", item_no)) %>%
-      dplyr::relocate(ref) %>%
-      dplyr::mutate(across(ends_with("date"), as.Date)) %>%
-      dplyr::select(-shortage_date_2)
-  }
-  
-  ofr_2nd_data <- function(df) {
-    df %>%
-      dplyr::group_by(ref, campus_no, shortage_date, item_no) %>%
-      dplyr::summarise(order_shortage_case_qty = sum(order_shortage_case_no, na.rm = TRUE), .groups = "drop") %>%
-      dplyr::mutate(reason_code = "", comment = "", submitted_date = Sys.Date())
-  }
-  
-  observeEvent(input$upload_button, {
-    if (is.null(rv$last_upload_date) || rv$last_upload_date != Sys.Date()) {
-      rv$data1 <- read_excel(input$file1$datapath)
-      rv$processed_data1 <- ofr_1st_data(rv$data1)
-      rv$processed_data2 <- ofr_2nd_data(rv$processed_data1)
-      
-      rv$last_upload_date <- Sys.Date()
-      
-      updatePickerInput(session, "campus_filter", choices = unique(rv$processed_data2$campus_no), selected = unique(rv$processed_data2$campus_no))
-      updatePickerInput(session, "dashboard_campus_filter", choices = unique(rv$processed_data2$campus_no), selected = unique(rv$processed_data2$campus_no))
-      updatePickerInput(session, "user_input_db_campus_filter", choices = unique(rv$processed_data2$campus_no), selected = unique(rv$processed_data2$campus_no))
-      updatePickerInput(session, "master_db_campus_filter", choices = unique(rv$processed_data2$campus_no), selected = unique(rv$processed_data2$campus_no))
-      
-      updateDateRangeInput(session, "date_filter", start = min(rv$processed_data2$shortage_date), end = max(rv$processed_data2$shortage_date))
-      updateDateRangeInput(session, "dashboard_date_filter", start = min(rv$processed_data2$shortage_date), end = max(rv$processed_data2$shortage_date))
-      updateDateRangeInput(session, "user_input_db_date_filter", start = min(rv$processed_data2$shortage_date), end = max(rv$processed_data2$shortage_date))
-      updateDateRangeInput(session, "master_db_date_filter", start = min(rv$processed_data2$shortage_date), end = max(rv$processed_data2$shortage_date))
-    } else {
-      showModal(modalDialog(
-        title = "Upload Error",
-        "Data has already been uploaded for today.",
-        easyClose = TRUE,
-        footer = NULL
-      ))
-    }
+  observe({
+    updatePickerInput(session, "campus_filter", choices = unique(rv$processed_data2$campus_no), selected = unique(rv$processed_data2$campus_no))
+    updatePickerInput(session, "dashboard_campus_filter", choices = unique(rv$user_input_backend_data$campus_no), selected = unique(rv$user_input_backend_data$campus_no))
+    updatePickerInput(session, "user_input_db_campus_filter", choices = unique(rv$user_input_database_data$campus_no), selected = unique(rv$user_input_database_data$campus_no))
+    updatePickerInput(session, "master_db_campus_filter", choices = unique(rv$master_database_data$campus_no), selected = unique(rv$master_database_data$campus_no))
+    
+    updateDateRangeInput(session, "date_filter", start = min(rv$processed_data2$shortage_date), end = max(rv$processed_data2$shortage_date))
+    updateDateRangeInput(session, "dashboard_date_filter", start = min(rv$user_input_backend_data$shortage_date), end = max(rv$user_input_backend_data$shortage_date))
+    updateDateRangeInput(session, "user_input_db_date_filter", start = min(rv$user_input_database_data$shortage_date), end = max(rv$user_input_database_data$shortage_date))
+    updateDateRangeInput(session, "master_db_date_filter", start = min(rv$master_database_data$shortage_date), end = max(rv$master_database_data$shortage_date))
   })
   
   filtered_data2 <- reactive({
@@ -175,7 +177,7 @@ server <- function(input, output, session) {
   })
   
   filtered_dashboard_data <- reactive({
-    data <- rv$user_input_data
+    data <- rv$user_input_backend_data
     if (!is.null(input$dashboard_campus_filter) && length(input$dashboard_campus_filter) > 0) {
       data <- data %>% filter(campus_no %in% input$dashboard_campus_filter)
     }
@@ -231,8 +233,33 @@ server <- function(input, output, session) {
     }
   })
   
-  observeEvent(input$deploy_button, {
-    rv$user_input_data <- filtered_data2()
+  observeEvent(input$save_button, {
+    # Combine existing backend data with new data, overwriting entries with the same ref
+    updated_backend_data <- rv$user_input_backend_data %>%
+      filter(!ref %in% filtered_data2()$ref) %>%
+      bind_rows(filtered_data2())
+    
+    # Update reactive value and save to file
+    rv$user_input_backend_data <- updated_backend_data
+    saveRDS(rv$user_input_backend_data, user_input_backend_data_path)
+    
+    # Trigger a re-render of the dashboard data table
+    output$dashboard_data <- renderDT({
+      datatable(filtered_dashboard_data(), options = list(scrollX = TRUE, pageLength = 10))
+    })
+  })
+  
+  observeEvent(input$send_to_database_button, {
+    # Send data to the database
+    rv$user_input_database_data <- bind_rows(rv$user_input_database_data, rv$user_input_backend_data)
+    
+    # Save to file
+    saveRDS(rv$user_input_database_data, user_input_database_data_path)
+    
+    # Update User-Input Data Base tab
+    output$user_input_database_data <- renderDT({
+      datatable(filtered_user_input_database_data(), options = list(scrollX = TRUE, pageLength = 10))
+    })
   })
   
   output$dashboard_data <- renderDT({
@@ -241,15 +268,24 @@ server <- function(input, output, session) {
   
   observe({
     invalidateLater(60000, session) # check every 60 seconds
-    if (format(Sys.time(), "%H:%M") == "23:59") {
-      rv$user_input_database_data <- bind_rows(rv$user_input_database_data, rv$user_input_data)
+    rv$user_input_backend_data <- readRDS(user_input_backend_data_path)
+    output$dashboard_data <- renderDT({
+      datatable(filtered_dashboard_data(), options = list(scrollX = TRUE, pageLength = 10))
+    })
+    
+    if (format(with_tz(Sys.time(), "America/Los_Angeles"), "%H:%M") == "23:59") {
+      rv$user_input_database_data <- bind_rows(rv$user_input_database_data, rv$user_input_backend_data)
       
       # Perform left join to add extra columns to Today's Data
-      today_data_with_extras <- left_join(rv$processed_data1, rv$user_input_data %>% select(ref, reason_code, comment, submitted_date), by = "ref")
+      today_data_with_extras <- left_join(rv$processed_data1, rv$user_input_backend_data %>% select(ref, reason_code, comment, submitted_date), by = "ref")
       
       rv$master_database_data <- bind_rows(rv$master_database_data, today_data_with_extras)
       
-      rv$user_input_data <- NULL
+      # Save to files
+      saveRDS(rv$user_input_database_data, user_input_database_data_path)
+      saveRDS(rv$master_database_data, master_database_data_path)
+      
+      rv$user_input_backend_data <- NULL
     }
   })
   

@@ -9,15 +9,13 @@ library(janitor)
 library(lubridate)
 library(rio)
 
-
 ### Daily Processing ###
 #################################################################### Read Files ####################################################################
 ofr_original <- read_excel("data-xlsx/05302024.xlsx")
 ####################################################################################################################################################
 
-
 ### Functions ###
-#### ofr 1st data manipultation ####
+#### ofr 1st data manipulation ####
 ofr_1st_data <- function(df) {
   df %>%
     janitor::clean_names() %>%
@@ -32,21 +30,13 @@ ofr_1st_data <- function(df) {
 # Use the function
 ofr_1st_data <- ofr_1st_data(ofr_original)
 
-
-#### ofr 2nd data manipultation ####
-
+#### ofr 2nd data manipulation ####
 ofr_2nd_data <- function(df) {
   df %>%
     dplyr::group_by(ref, campus_no, shortage_date, item_no) %>%
-    dplyr::summarise(order_shortage_case_qty = sum(order_shortage_case_no, na.rm = TRUE), .groups = "drop") 
+    dplyr::summarise(order_shortage_case_qty = sum(order_shortage_case_no, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(reason_code = "", comment = "", submitted_date = Sys.Date())
 }
 
 # Use the function
 ofr_2nd_data <- ofr_2nd_data(ofr_1st_data)
-
-
-
-
-
-
-
