@@ -7,3 +7,9 @@
 # - distinct by ref. but, always priority if either reason_code, comment has value. 
 
 
+
+# almost done
+# fix the Save button. 
+# add .rds download button in Live Database tab.
+# Test the app. 
+
