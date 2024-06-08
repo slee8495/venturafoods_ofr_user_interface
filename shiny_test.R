@@ -14,20 +14,33 @@ source("data.R")
 # Load initial data from the saved files or from the initial processing
 load_data <- function() {
   list(
-    processed_data1 = ofr_1st_data, # Processed initial data
-    processed_data2 = ofr_2nd_data, # Processed second data
-    master_data = ofr_master_data,  # Combined and cleaned master data
-    live_database = live_database   # The new live database to be used in the app
+    processed_data1 = ofr_1st_data,
+    processed_data2 = ofr_2nd_data,
+    master_data = ofr_master_data,
+    live_database = live_database
   )
 }
 
 data <- load_data()
 
-# Ensure live_database has the columns for updates
-data$live_database <- data$live_database %>%
-  mutate(reason_code = NA_character_,
-         comment = NA_character_,
-         submitted_date = NA_Date_)
+# Ensure submitted_date is in Date format if it exists
+if ("submitted_date" %in% colnames(data$live_database)) {
+  data$live_database$submitted_date <- as.Date(data$live_database$submitted_date, origin = "1970-01-01") # Adjust the origin if necessary
+} else {
+  data$live_database <- data$live_database %>%
+    mutate(submitted_date = NA_Date_)
+}
+
+# Add missing columns reason_code and comment with appropriate NA values
+if (!"reason_code" %in% colnames(data$live_database)) {
+  data$live_database <- data$live_database %>%
+    mutate(reason_code = NA_character_)
+}
+
+if (!"comment" %in% colnames(data$live_database)) {
+  data$live_database <- data$live_database %>%
+    mutate(comment = NA_character_)
+}
 
 #### Shiny ####
 ##################### ui ######################
@@ -338,7 +351,7 @@ server <- function(input, output, session) {
         mutate(
           reason_code = ifelse(is.na(reason_code.y), reason_code.x, reason_code.y),
           comment = ifelse(is.na(comment.y), comment.x, comment.y),
-          submitted_date = ifelse(is.na(submitted_date.y), submitted_date.x, submitted_date.y)
+          submitted_date = as.Date(ifelse(is.na(submitted_date.y), submitted_date.x, submitted_date.y), origin = "1970-01-01") # Ensure correct Date conversion
         ) %>%
         select(-ends_with(".x"), -ends_with(".y"))
       

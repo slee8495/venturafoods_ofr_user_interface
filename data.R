@@ -53,7 +53,7 @@ ofr_master_data_function <- function(df, initial_data) {
   # Prioritize rows where either reason_code or comment is not empty
   combined_data <- combined_data %>%
     arrange(desc(reason_code != ""), desc(comment != "")) %>% 
-    distinct(ref, sales_order_no, .keep_all = TRUE)
+    distinct(ref, sales_order_no, .keep_all = TRUE) 
   
   return(combined_data)
 }

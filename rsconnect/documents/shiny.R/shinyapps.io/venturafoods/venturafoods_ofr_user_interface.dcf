@@ -5,7 +5,7 @@ account: venturafoods
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 12099512
-bundleId: 8717685
+bundleId: 8717856
 url: https://venturafoods.shinyapps.io/venturafoods_ofr_user_interface/
 version: 1
 asMultiple: FALSE
