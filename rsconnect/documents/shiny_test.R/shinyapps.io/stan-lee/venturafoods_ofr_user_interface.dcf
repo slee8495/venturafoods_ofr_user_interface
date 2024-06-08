@@ -5,7 +5,7 @@ account: stan-lee
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 12109250
-bundleId: 8693579
+bundleId: 8712553
 url: https://sangho-lee.shinyapps.io/venturafoods_ofr_user_interface/
 version: 1
 asMultiple: FALSE

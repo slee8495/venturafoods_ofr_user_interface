@@ -11,7 +11,8 @@ library(rio)
 
 ### Daily Processing ###
 #################################################################### Read Files ####################################################################
-ofr_original <- read_excel("data-xlsx/05302024.xlsx")
+ofr_original <- readRDS("master_data.rds")
+# ofr_original <- read_excel("data-xlsx/05302024.xlsx"). # for the 1st try. 
 ####################################################################################################################################################
 
 ### Functions ###
@@ -19,9 +20,12 @@ ofr_original <- read_excel("data-xlsx/05302024.xlsx")
 ofr_1st_data <- function(df) {
   df %>%
     janitor::clean_names() %>%
+    dplyr::select(-reason_code, -comment, -submitted_date) %>% # for the 1st try, deactive this. 
     dplyr::mutate(item_no = gsub("-", "", item_no)) %>%
     dplyr::mutate(shortage_date_2 = as.double(shortage_date)) %>%
-    dplyr::mutate(ref = paste0(campus_no, "_", shortage_date_2, "_", item_no)) %>%
+    dplyr::mutate(database_uploaded_date = Sys.Date(),
+                  database_uploaded_date = as.double(database_uploaded_date)) %>% 
+    dplyr::mutate(ref = paste0(campus_no, "_", shortage_date_2, "_", item_no, "_", database_uploaded_date)) %>%
     dplyr::relocate(ref) %>%
     dplyr::mutate(across(ends_with("date"), as.Date)) %>%
     dplyr::select(-shortage_date_2)
@@ -33,7 +37,7 @@ ofr_1st_data <- ofr_1st_data(ofr_original)
 #### ofr 2nd data manipulation ####
 ofr_2nd_data <- function(df) {
   df %>%
-    dplyr::group_by(ref, campus_no, shortage_date, item_no) %>%
+    dplyr::group_by(ref, campus_no, shortage_date, item_no, database_uploaded_date) %>%
     dplyr::summarise(order_shortage_case_qty = sum(order_shortage_case_no, na.rm = TRUE), .groups = "drop") %>%
     dplyr::mutate(reason_code = "", comment = "", submitted_date = Sys.Date())
 }
