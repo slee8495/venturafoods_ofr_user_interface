@@ -150,9 +150,9 @@ ui <- navbarPage("OFR User Input Data Base App",
                  ),
                  tags$head(
                    tags$style(HTML("
+                                   #data3 table.dataTable tr td:nth-child(7),
                                    #data3 table.dataTable tr td:nth-child(8),
-                                   #data3 table.dataTable tr td:nth-child(9),
-                                   #data3 table.dataTable tr td:nth-child(10) {
+                                   #data3 table.dataTable tr td:nth-child(9) {
                                      background-color: lightgreen !important;
                                    }
                                    "))
@@ -257,7 +257,7 @@ server <- function(input, output, session) {
   })
   
   output$data3 <- renderDT({
-    datatable(filtered_data2(), editable = list(target = "cell", columns = c(8, 9, 10)), options = list(scrollX = TRUE, pageLength = 10))
+    datatable(filtered_data2(), editable = list(target = "cell", columns = c(7, 8, 9)), options = list(scrollX = TRUE, pageLength = 10))
   })
   
   output$master_data <- renderDT({

@@ -14,10 +14,10 @@ source("data.R")
 # Load initial data from the saved files or from the initial processing
 load_data <- function() {
   list(
-    processed_data1 = ofr_1st_data,
-    processed_data2 = ofr_2nd_data,
-    master_data = ofr_master_data,
-    live_database = live_database
+    processed_data1 = ofr_1st_data, # Processed initial data
+    processed_data2 = ofr_2nd_data, # Processed second data
+    master_data = ofr_master_data,  # Combined and cleaned master data
+    live_database = live_database   # The new live database to be used in the app
   )
 }
 
@@ -150,9 +150,9 @@ ui <- navbarPage("OFR User Input Data Base App",
                  ),
                  tags$head(
                    tags$style(HTML("
+                                   #data3 table.dataTable tr td:nth-child(7),
                                    #data3 table.dataTable tr td:nth-child(8),
-                                   #data3 table.dataTable tr td:nth-child(9),
-                                   #data3 table.dataTable tr td:nth-child(10) {
+                                   #data3 table.dataTable tr td:nth-child(9) {
                                      background-color: lightgreen !important;
                                    }
                                    "))
@@ -257,7 +257,7 @@ server <- function(input, output, session) {
   })
   
   output$data3 <- renderDT({
-    datatable(filtered_data2(), editable = list(target = "cell", columns = c(8, 9, 10)), options = list(scrollX = TRUE, pageLength = 10))
+    datatable(filtered_data2(), editable = list(target = "cell", columns = c(7, 8, 9)), options = list(scrollX = TRUE, pageLength = 10))
   })
   
   output$master_data <- renderDT({

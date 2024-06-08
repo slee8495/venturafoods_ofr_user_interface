@@ -15,11 +15,6 @@ ofr_original <- read_excel("data-xlsx/05302024.xlsx")
 ofr_master_database <- readRDS("master_data.rds")
 ####################################################################################################################################################
 
-# ofr_1st_data %>%
-#   dplyr::mutate(database_uploaded_date = Sys.Date(), reason_code = "", comment = "", submitted_date = Sys.Date()) -> temp_data
-# 
-# saveRDS(temp_data, "master_data.rds") 
-
 
 ### Functions ###
 #### ofr 1st data manipulation ####
@@ -69,7 +64,7 @@ ofr_master_data <- ofr_master_data_function(ofr_master_database, ofr_1st_data)
 ofr_2nd_data_function <- function(df) {
   df %>%
     janitor::clean_names() %>%  # Ensure clean column names for consistency
-    dplyr::group_by(campus_no, shortage_date, item_no, database_uploaded_date) %>%
+    dplyr::group_by(campus_no, shortage_date, item_no) %>%
     dplyr::summarise(order_shortage_case_qty = sum(order_shortage_case_no, na.rm = TRUE), .groups = "drop") %>%
     
     dplyr::mutate(shortage_date_2 = as.double(shortage_date)) %>%
