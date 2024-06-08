@@ -85,7 +85,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                                      fluidPage(
                                        titlePanel("User-Input"),
                                        fluidRow(
-                                         column(2, actionButton("save_button", "Save", style = "background-color: lightblue; color: black;")),
+                                         column(2, actionButton("save_button", "Send to Database", style = "background-color: lightblue; color: black;")),
                                        ),
                                        br(),
                                        fluidRow(
@@ -116,7 +116,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                                      br(),
                                      fluidPage(
                                        fluidRow(
-                                         column(2, downloadButton("download_rds_button_live", "Download as .rds", style = "background-color: coral; color: black;"))
+                                         column(2, downloadButton("download_rds_button_live", "For an authorized user", style = "background-color: coral; color: black;"))
                                        ),
                                        br(),
                                        fluidRow(
