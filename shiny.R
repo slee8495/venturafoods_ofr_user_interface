@@ -83,7 +83,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                             ),
                             tabPanel("User-Input",
                                      fluidPage(
-                                       titlePanel("User-Input"),
+                                       br(),
                                        fluidRow(
                                          column(2, actionButton("save_button", "Send to Database", style = "background-color: lightblue; color: black;")),
                                        ),
@@ -99,7 +99,7 @@ ui <- navbarPage("OFR User Input Data Base App",
                             ),
                             tabPanel("User Input Dashboard", # New tab to show non-editable data
                                      fluidPage(
-                                       titlePanel("User Input Dashboard"),
+                                       br(),
                                        br(),
                                        fluidRow(
                                          column(12,
