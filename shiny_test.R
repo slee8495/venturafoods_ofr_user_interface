@@ -171,6 +171,12 @@ server <- function(input, output, session) {
     live_data = data$live_database # Initialize live data with live_database from data.R
   )
   
+  # Define the dropdown choices for the reason_code column
+  reason_code_choices <- c("Code1", "Code2", "Code3", "Code4")  # Update with actual choices
+  
+  # Convert reason_code_choices to a JSON format for JavaScript use
+  reason_code_choices_js <- jsonlite::toJSON(reason_code_choices, auto_unbox = TRUE)
+  
   # Update filters on session start
   observe({
     updatePickerInput(session, "campus_filter", choices = unique(rv$processed_data2$campus_no), selected = unique(rv$processed_data2$campus_no))
@@ -251,32 +257,110 @@ server <- function(input, output, session) {
     data
   })
   
-  # Render Data Tables
+  # Render Data Table with editable dropdowns for reason_code column for "User-Input" tab
+  output$data3 <- renderDT({
+    datatable(
+      rv$processed_data2,  # Use rv$processed_data2 directly for user input
+      options = list(scrollX = TRUE, pageLength = 10, 
+                     columnDefs = list(list(targets = 7, render = JS(
+                       sprintf(
+                         "function(data, type, row, meta) {
+                           if (type === 'display') {
+                             var select = '<select class=\"form-control dt-editable\" onchange=\"$(this).trigger(\'change\')\" data-row=\"' + row + '\" data-col=\"' + meta.col + '\">';
+                             var options = %s;
+                             for (var i = 0; i < options.length; i++) {
+                               select += '<option value=\"' + options[i] + '\"' + (data === options[i] ? ' selected' : '') + '>' + options[i] + '</option>';
+                             }
+                             select += '</select>';
+                             return select;
+                           }
+                           return data;
+                         }",
+                         reason_code_choices_js
+                       )
+                     )))
+      ),
+      callback = JS(
+        "table.on('change', '.dt-editable', function() {
+          var $select = $(this);
+          var value = $select.val();
+          var row = $select.data('row');
+          var col = $select.data('col');
+          table.cell(row, col).data(value).draw();
+          Shiny.setInputValue('edited_cells', {row: row, col: col, value: value}, {priority: 'event'});
+        });"
+      ),
+      editable = TRUE  # Allow editing
+    )
+  })
+  
+  # Handle the edits and update the reactive value
+  observeEvent(input$edited_cells, {
+    info <- input$edited_cells
+    
+    # Extract the row, column, and value from the input
+    i <- info$row + 1  # JavaScript is 0-indexed; R is 1-indexed
+    j <- info$col + 1
+    v <- info$value
+    
+    # Print debug info
+    print(paste("Row:", i, "Column:", j, "Value:", v))
+    
+    # Determine correct indices for reason_code, comment, and submitted_date
+    reason_code_index <- which(colnames(rv$processed_data2) == "reason_code")
+    comment_index <- which(colnames(rv$processed_data2) == "comment")
+    submitted_date_index <- which(colnames(rv$processed_data2) == "submitted_date")
+    
+    # Update the correct column based on the index
+    if (j == reason_code_index) {
+      rv$processed_data2[i, "reason_code"] <- v
+    } else if (j == comment_index) {
+      rv$processed_data2[i, "comment"] <- v
+    } else if (j == submitted_date_index) {
+      rv$processed_data2[i, "submitted_date"] <- as.Date(v)
+    }
+  })
+  
+  # Save changes from User-Input and update User Input Dashboard and live_data
+  observeEvent(input$save_button, {
+    if (nrow(rv$processed_data2) > 0 && "ref" %in% colnames(rv$processed_data2)) {
+      # Update the User Input Dashboard to show the latest changes
+      output$user_input_dashboard_data <- renderDT({
+        datatable(rv$processed_data2, options = list(scrollX = TRUE, pageLength = 10))
+      })
+      
+      # Perform VLOOKUP-style update for live_data from user_input_backend_data
+      rv$live_data <- rv$live_data %>%
+        left_join(rv$processed_data2 %>% select(ref, reason_code, comment, submitted_date), by = "ref") %>%
+        mutate(
+          reason_code = ifelse(is.na(reason_code.y), reason_code.x, reason_code.y),
+          comment = ifelse(is.na(comment.y), comment.x, comment.y),
+          submitted_date = as.Date(ifelse(is.na(submitted_date.y), submitted_date.x, submitted_date.y), origin = "1970-01-01") # Ensure correct Date conversion
+        ) %>%
+        select(-ends_with(".x"), -ends_with(".y"))
+      
+      showNotification("Changes saved and User Input Dashboard updated.", type = "message")
+    }
+  })
+  
+  # Render "Today's Data" table
   output$data2 <- renderDT({
     datatable(filtered_db_data(), options = list(scrollX = TRUE, pageLength = 10))
   })
   
-  output$data3 <- renderDT({
-    datatable(filtered_data2(), editable = list(target = "cell", columns = c(7, 8, 9)), options = list(scrollX = TRUE, pageLength = 10))
-  })
-  
-  output$master_data <- renderDT({
-    datatable(filtered_master_data(), options = list(scrollX = TRUE, pageLength = 10))
-  })
-  
-  # Render the new "User Input Dashboard" table (non-editable)
+  # Render "User-Input Dashboard" table
   output$user_input_dashboard_data <- renderDT({
     datatable(rv$processed_data2, options = list(scrollX = TRUE, pageLength = 10))
   })
   
-  # Render the new "Live Database" table without updates
-  output$live_data <- renderDT({
-    datatable(filtered_live_data(), options = list(scrollX = TRUE, pageLength = 10))
+  # Render "Master Database" table
+  output$master_data <- renderDT({
+    datatable(filtered_master_data(), options = list(scrollX = TRUE, pageLength = 10))
   })
   
-  # Render full master data table with filters in Master Database tab
-  output$master_data_table <- renderDT({
-    datatable(filtered_master_data(), options = list(scrollX = TRUE, pageLength = 10))
+  # Render "Live Database" table
+  output$live_data <- renderDT({
+    datatable(filtered_live_data(), options = list(scrollX = TRUE, pageLength = 10))
   })
   
   # Download handlers for master data in Master Database tab
@@ -308,60 +392,11 @@ server <- function(input, output, session) {
     }
   )
   
-  # Observe cell edits and update reactive data
-  observeEvent(input$data3_cell_edit, {
-    info <- input$data3_cell_edit
-    str(info)  # Debug print to check column indices and values
-    
-    # Print the names of columns for verification
-    print(colnames(rv$processed_data2))
-    
-    i <- info$row
-    j <- info$col
-    v <- info$value
-    
-    # Print to check what column index corresponds to
-    print(paste("Editing row", i, "column", j, "value", v))
-    
-    # Determine correct indices for reason_code, comment, and submitted_date
-    reason_code_index <- which(colnames(rv$processed_data2) == "reason_code")
-    comment_index <- which(colnames(rv$processed_data2) == "comment")
-    submitted_date_index <- which(colnames(rv$processed_data2) == "submitted_date")
-    
-    if (j == reason_code_index) {  # Update this index if 'reason_code' is not the 8th column
-      rv$processed_data2[i, "reason_code"] <<- v
-    } else if (j == comment_index) {  # Update this index if 'comment' is not the 9th column
-      rv$processed_data2[i, "comment"] <<- v
-    } else if (j == submitted_date_index) {  # Update this index if 'submitted_date' is not the 10th column
-      rv$processed_data2[i, "submitted_date"] <<- as.Date(v)
-    }
-  })
-  
-  # Save changes from User-Input and update User Input Dashboard only
-  observeEvent(input$save_button, {
-    if (nrow(rv$processed_data2) > 0 && "ref" %in% colnames(rv$processed_data2)) {
-      # Update the User Input Dashboard to show the latest changes
-      output$user_input_dashboard_data <- renderDT({
-        datatable(rv$processed_data2, options = list(scrollX = TRUE, pageLength = 10))
-      })
-      
-      # Perform VLOOKUP-style update for live_data from user_input_backend_data
-      rv$live_data <- rv$live_data %>%
-        left_join(rv$processed_data2 %>% select(ref, reason_code, comment, submitted_date), by = "ref") %>%
-        mutate(
-          reason_code = ifelse(is.na(reason_code.y), reason_code.x, reason_code.y),
-          comment = ifelse(is.na(comment.y), comment.x, comment.y),
-          submitted_date = as.Date(ifelse(is.na(submitted_date.y), submitted_date.x, submitted_date.y), origin = "1970-01-01") # Ensure correct Date conversion
-        ) %>%
-        select(-ends_with(".x"), -ends_with(".y"))
-      
-      showNotification("Changes saved and User Input Dashboard updated.", type = "message")
-    }
-  })
-  
   output$current_date <- renderText({
     format(Sys.Date(), "%Y-%m-%d")
   })
 }
+
+
 
 shinyApp(ui = ui, server = server)
